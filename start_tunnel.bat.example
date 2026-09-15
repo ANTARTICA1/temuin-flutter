@@ -1,0 +1,8 @@
+@echo off
+echo ===================================================
+echo Membuka koneksi Ngrok untuk port 80...
+echo ===================================================
+echo.
+echo Pastikan ngrok sudah terinstall di sistem Anda.
+ngrok http 80
+pause

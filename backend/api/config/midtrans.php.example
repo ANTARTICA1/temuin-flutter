@@ -1,0 +1,5 @@
+<?php
+// Template Konfigurasi Midtrans
+// Salin file ini menjadi 'midtrans.php' di folder yang sama dan isi dengan Server Key Anda.
+$serverKey = 'YOUR_MIDTRANS_SERVER_KEY_HERE';
+$isProduction = false;
