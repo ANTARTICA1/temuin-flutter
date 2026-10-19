@@ -246,57 +246,45 @@ class _FormFoundScreenState extends State<FormFoundScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.secondary.withOpacity(0.08),
-                      AppColors.info.withOpacity(0.04),
-                    ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.favorite_rounded, color: AppColors.secondary, size: 22),
                   ),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.secondary.withOpacity(0.15)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.favorite_rounded, color: AppColors.secondary, size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Terima kasih!',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Terima kasih!',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Anda menemukan ${widget.itemName}. Pemilik akan menerima notifikasi.',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                              height: 1.4,
-                            ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Anda menemukan ${widget.itemName}. Pemilik akan menerima notifikasi.',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            height: 1.4,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
               
               const Text(
                 'Lokasi Saat Ini',
@@ -419,10 +407,10 @@ class _FormFoundScreenState extends State<FormFoundScreen>
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildQuickNote('📍 Di pos satpam'),
-                  _buildQuickNote('🏪 Di toko terdekat'),
-                  _buildQuickNote('🪑 Di meja/kursi'),
-                  _buildQuickNote('📦 Saya simpan'),
+                  _buildQuickNote('Di pos satpam'),
+                  _buildQuickNote('Di toko terdekat'),
+                  _buildQuickNote('Di meja/kursi'),
+                  _buildQuickNote('Saya simpan'),
                 ],
               ),
 

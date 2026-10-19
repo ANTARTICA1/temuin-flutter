@@ -11,32 +11,65 @@ class ScannerScreen extends StatefulWidget {
 }
 
 class _ScannerScreenState extends State<ScannerScreen> {
-  bool _isScanComplete = false;
+  late final MobileScannerController _controller;
+  bool _isNavigating = false;
+  bool _isTorchOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+  }
+
   @override
   void dispose() {
+    _controller.dispose();
     super.dispose();
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_isScanComplete) return;
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    // Kunci langsung secara sinkron agar tidak ada multi-trigger dari frame berikutnya
+    if (_isNavigating) return;
 
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
-      final String rawId = barcodes.first.rawValue!;
+      final String rawId = barcodes.first.rawValue!.trim();
       
       if (rawId.startsWith('ITEM_')) {
-        setState(() => _isScanComplete = true);
-        
-        Navigator.push(
+        _isNavigating = true;
+
+        // 1. Hentikan kamera scanner segera agar tidak terus memproses frame di background
+        try {
+          await _controller.stop();
+        } catch (_) {}
+
+        if (!mounted) return;
+
+        // 2. Navigasi ke halaman hasil scan
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ScanResultScreen(itemId: rawId),
           ),
-        ).then((_) {
+        );
+
+        // 3. Setelah user menekan tombol 'Back' dari ScanResultScreen:
+        if (mounted) {
+          try {
+            await _controller.start();
+          } catch (_) {}
+
+          // Berikan jeda cooldown 1.5 detik agar kamera tidak langsung mendeteksi ulang
+          // jika QR Code masih berada di depan lensa
+          await Future.delayed(const Duration(milliseconds: 1500));
           if (mounted) {
-            setState(() => _isScanComplete = false);
+            _isNavigating = false;
           }
-        });
+        }
       }
     }
   }
@@ -48,6 +81,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       body: Stack(
         children: [
           MobileScanner(
+            controller: _controller,
             onDetect: _onDetect,
           ),
           Positioned(
@@ -120,6 +154,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       ),
                     ),
                   ],
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () async {
+                    try {
+                      await _controller.toggleTorch();
+                      if (mounted) {
+                        setState(() => _isTorchOn = !_isTorchOn);
+                      }
+                    } catch (_) {}
+                  },
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _isTorchOn ? Colors.amber.withOpacity(0.3) : Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                      color: _isTorchOn ? Colors.amber : Colors.white,
+                      size: 20,
+                    ),
+                  ),
                 ),
               ],
             ),

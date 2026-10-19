@@ -9,11 +9,15 @@ class ApiConstants {
   static const String categories = '$baseUrl/master/categories.php';
 
   static const String items = '$baseUrl/items/index.php';
+  static const String itemSlots = '$baseUrl/items/slots.php';
   static const String itemDetail = '$baseUrl/items/detail.php';
   static const String itemDelete = '$baseUrl/items/delete.php';
   static const String itemsFeed = '$baseUrl/items/feed.php';
+  static const String priorityFeed = '$baseUrl/items/feed.php?priority_only=1';
   static const String itemBoost = '$baseUrl/items/boost.php';
+  static const String itemUpdatePriority = '$baseUrl/items/update_priority.php';
   static const String paymentCharge = '$baseUrl/payment/charge.php';
+  static const String paymentCheckStatus = '$baseUrl/payment/check_status.php';
 
   static String get notifications => '$baseUrl/notifications/index.php';
   static String get readNotification => '$baseUrl/notifications/read.php';

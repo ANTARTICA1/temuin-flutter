@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -130,6 +131,54 @@ class _ScanResultScreenState extends State<ScanResultScreen>
     }
   }
 
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'Rp 0';
+    final numVal = int.tryParse(value.toString()) ?? 0;
+    final formatted = numVal.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+    return 'Rp $formatted';
+  }
+
+  Future<void> _contactOwnerViaWhatsApp() async {
+    final phone = _itemData?['contact_phone']?.toString().isNotEmpty == true
+        ? _itemData!['contact_phone'].toString()
+        : _itemData?['owner_phone']?.toString();
+    if (phone == null || phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nomor kontak pemilik tidak tersedia.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '62${cleanPhone.substring(1)}';
+    }
+
+    final itemName = _itemData?['name'] ?? 'Barang';
+    final ownerName = _itemData?['owner_name'] ?? 'Kak';
+    final message = Uri.encodeComponent(
+      "Halo $ownerName, saya menemukan / memindai QR barang Anda ($itemName) melalui Temuin. Saya ingin mengembalikan barang tersebut.",
+    );
+    final url = Uri.parse("https://wa.me/$cleanPhone?text=$message");
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak dapat membuka WhatsApp.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,6 +229,7 @@ class _ScanResultScreenState extends State<ScanResultScreen>
     final status = _itemData!['status']?.toString() ?? 'safe';
     final statusColor = _getStatusColor(status);
     final ownerName = _itemData!['owner_name'] ?? 'Pengguna Temuin';
+    final isPremium = (_itemData!['is_premium'] == 1 || _itemData!['is_premium'] == '1');
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -298,35 +348,78 @@ class _ScanResultScreenState extends State<ScanResultScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: statusColor.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getStatusIcon(status),
-                            size: 16,
-                            color: statusColor,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Status: ${_getStatusLabel(status)}',
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: statusColor.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getStatusIcon(status),
+                                size: 16,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Status: ${_getStatusLabel(status)}',
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isPremium)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFF39C12), Color(0xFFE67E22)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFF39C12).withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bolt_rounded, size: 16, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'RADAR PRIORITAS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -542,6 +635,201 @@ class _ScanResultScreenState extends State<ScanResultScreen>
                   const SizedBox(height: 32),
 
                   if (status == 'lost') ...[
+                    // Bounty / Reward Card
+                    if ((int.tryParse(_itemData!['reward_amount']?.toString() ?? '0') ?? 0) > 0 ||
+                        (_itemData!['reward_description']?.toString().isNotEmpty ?? false))
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFF9E6), Color(0xFFFFF0C2)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFFDCB6E), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF39C12).withOpacity(0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF39C12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.card_giftcard_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'SAYEMBARA IMBALAN PENEMU',
+                                        style: TextStyle(
+                                          color: Color(0xFFD35400),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Pemilik Menyediakan Hadiah!',
+                                        style: TextStyle(
+                                          color: Color(0xFF2D3436),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            if ((int.tryParse(_itemData!['reward_amount']?.toString() ?? '0') ?? 0) > 0)
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFFDCB6E)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'Nominal Imbalan:',
+                                      style: TextStyle(
+                                        color: Color(0xFF636E72),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatCurrency(_itemData!['reward_amount']),
+                                      style: const TextStyle(
+                                        color: Color(0xFFD35400),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (_itemData!['reward_description']?.toString().isNotEmpty ?? false) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline_rounded,
+                                    size: 15,
+                                    color: Color(0xFFE67E22),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _itemData!['reward_description'],
+                                      style: const TextStyle(
+                                        color: Color(0xFF2D3436),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Kembalikan barang ini kepada pemilik untuk menerima imbalan tersebut sebagai tanda apresiasi.',
+                              style: TextStyle(
+                                color: Color(0xFF636E72),
+                                fontSize: 11,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Last Seen Location
+                    if (_itemData!['last_seen_location']?.toString().isNotEmpty ?? false)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0984E3).withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF0984E3).withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0984E3).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.near_me_rounded,
+                                color: Color(0xFF0984E3),
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Perkiraan Lokasi Terakhir Terlihat',
+                                    style: TextStyle(
+                                      color: Color(0xFF0984E3),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _itemData!['last_seen_location'],
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     Container(
                       padding: const EdgeInsets.all(14),
                       margin: const EdgeInsets.only(bottom: 16),
@@ -562,7 +850,7 @@ class _ScanResultScreenState extends State<ScanResultScreen>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Barang ini sedang dilaporkan hilang oleh pemiliknya! Jika Anda menemukannya, bantu laporkan.',
+                              'Barang ini sedang dilaporkan hilang oleh pemiliknya! Jika Anda menemukannya, bantu laporkan atau hubungi pemilik langsung.',
                               style: TextStyle(
                                 color: AppColors.textPrimary.withOpacity(0.8),
                                 fontSize: 12,
@@ -571,6 +859,33 @@ class _ScanResultScreenState extends State<ScanResultScreen>
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ],
+
+                  if ((_itemData!['contact_phone']?.toString().isNotEmpty ?? false) ||
+                      (_itemData!['owner_phone']?.toString().isNotEmpty ?? false)) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _contactOwnerViaWhatsApp,
+                        icon: const Icon(Icons.chat_rounded, color: Color(0xFF25D366)),
+                        label: const Text(
+                          'Hubungi Pemilik via WhatsApp',
+                          style: TextStyle(
+                            color: Color(0xFF25D366),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF25D366), width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
                       ),
                     ),
                   ],

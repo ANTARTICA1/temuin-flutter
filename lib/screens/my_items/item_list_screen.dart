@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../widgets/buy_slot_bottom_sheet.dart';
 import 'add_item_screen.dart';
 import 'item_detail_screen.dart';
 
@@ -16,6 +17,7 @@ class ItemListScreen extends StatefulWidget {
 class _ItemListScreenState extends State<ItemListScreen> {
   bool _isLoading = true;
   List<dynamic> _items = [];
+  Map<String, dynamic>? _slotInfo;
 
   @override
   void initState() {
@@ -36,6 +38,9 @@ class _ItemListScreenState extends State<ItemListScreen> {
         if (mounted) {
           setState(() {
             _items = data['data'];
+            if (data['slots'] != null) {
+              _slotInfo = Map<String, dynamic>.from(data['slots']);
+            }
           });
         }
       } else {
@@ -129,6 +134,12 @@ class _ItemListScreenState extends State<ItemListScreen> {
               ),
             ),
           ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+              child: _buildSlotQuotaCard(),
+            ),
+          ),
           if (_isLoading)
             const SliverFillRemaining(
               child: Center(
@@ -136,7 +147,10 @@ class _ItemListScreenState extends State<ItemListScreen> {
               ),
             )
           else if (_items.isEmpty)
-            SliverFillRemaining(child: _buildEmptyState())
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildEmptyState(),
+            )
           else
             SliverPadding(
               padding: const EdgeInsets.all(20),
@@ -197,8 +211,9 @@ class _ItemListScreenState extends State<ItemListScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      Expanded(
+                                      Flexible(
                                         child: Text(
                                           item['name'],
                                           style: const TextStyle(
@@ -209,32 +224,36 @@ class _ItemListScreenState extends State<ItemListScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      if (isPremium)
+                                      if (isPremium) ...[
+                                        const SizedBox(width: 6),
                                         Container(
-                                          margin: const EdgeInsets.only(left: 8),
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                                           decoration: BoxDecoration(
                                             gradient: const LinearGradient(
                                               colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
                                             ),
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: const Row(
                                             mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.verified_rounded, color: Colors.white, size: 12),
-                                              SizedBox(width: 4),
+                                              Icon(Icons.verified_rounded, color: Colors.white, size: 11),
+                                              SizedBox(width: 3),
                                               Text(
                                                 'PRO',
                                                 style: TextStyle(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.w800,
-                                                  fontSize: 10,
+                                                  fontSize: 9.5,
+                                                  height: 1.1,
+                                                  letterSpacing: 0.5,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -306,18 +325,263 @@ class _ItemListScreenState extends State<ItemListScreen> {
         child: FloatingActionButton.extended(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddItemScreen()),
-            ).then((_) => _fetchItems());
-          },
+          onPressed: _onAddPressed,
           icon: const Icon(Icons.add_rounded, color: Colors.white),
           label: const Text(
             'Tambah',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
         ),
+      ),
+    );
+  }
+
+  void _onAddPressed() {
+    final used = _slotInfo?['used_slots'] ?? _items.length;
+    final maxSlots = _slotInfo?['max_slots'] ?? 5;
+
+    if (used >= maxSlots) {
+      _showSlotFullDialog(used, maxSlots);
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddItemScreen(slotInfo: _slotInfo),
+        ),
+      ).then((_) => _fetchItems());
+    }
+  }
+
+  void _showSlotFullDialog(int used, int maxSlots) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.inventory_2_rounded, color: AppColors.error, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Slot Barang Penuh',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Anda telah menggunakan seluruh $used dari $maxSlots slot barang yang tersedia.',
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Beli slot tambahan seharga Rp 9.000 / slot agar dapat mendaftarkan barang baru.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Nanti Saja', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openBuySlotSheet();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Beli Slot Sekarang'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openBuySlotSheet() async {
+    final result = await BuySlotBottomSheet.show(context, initialSlots: _slotInfo);
+    if (result == true) {
+      _fetchItems();
+    }
+  }
+
+  Widget _buildSlotQuotaCard() {
+    final used = _slotInfo?['used_slots'] ?? _items.length;
+    final maxSlots = _slotInfo?['max_slots'] ?? 5;
+    final extraSlots = _slotInfo?['extra_slots'] ?? 0;
+    final remaining = (maxSlots - used).clamp(0, 999);
+    final isFull = used >= maxSlots;
+    final progress = maxSlots > 0 ? (used / maxSlots).clamp(0.0, 1.0) : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isFull ? AppColors.error.withOpacity(0.3) : Colors.black.withOpacity(0.04),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: isFull ? AppColors.warmGradient : AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.layers_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Kapasitas Slot Barang',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '5 slot gratis • +$extraSlots slot tambahan',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isFull ? AppColors.error.withOpacity(0.12) : AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$used / $maxSlots Slot',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isFull ? AppColors.error : AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: AppColors.background,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isFull ? AppColors.error : AppColors.primary,
+              ),
+              minHeight: 7,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isFull ? 'Slot penuh! Beli slot untuk menambah' : '$remaining slot tersisa',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isFull ? AppColors.error : AppColors.textSecondary,
+                ),
+              ),
+              GestureDetector(
+                onTap: _openBuySlotSheet,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_shopping_cart_rounded, color: Colors.white, size: 13),
+                      SizedBox(width: 4),
+                      Text(
+                        'Beli Slot (+)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

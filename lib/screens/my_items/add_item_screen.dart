@@ -5,9 +5,12 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
+import '../../widgets/buy_slot_bottom_sheet.dart';
 
 class AddItemScreen extends StatefulWidget {
-  const AddItemScreen({super.key});
+  final Map<String, dynamic>? slotInfo;
+
+  const AddItemScreen({super.key, this.slotInfo});
 
   @override
   State<AddItemScreen> createState() => _AddItemScreenState();
@@ -17,12 +20,120 @@ class _AddItemScreenState extends State<AddItemScreen> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   bool _isLoading = false;
+  Map<String, dynamic>? _currentSlotInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSlotInfo = widget.slotInfo;
+    if (_currentSlotInfo == null) {
+      _fetchSlotInfo();
+    }
+  }
+
+  Future<void> _fetchSlotInfo() async {
+    try {
+      final response = await ApiClient.getRequest(ApiConstants.itemSlots);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'success' && mounted) {
+          setState(() {
+            _currentSlotInfo = data['data'];
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
     super.dispose();
+  }
+
+  void _showSlotLimitReachedDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.inventory_2_rounded, color: AppColors.error, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Slot Penuh!',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message,
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.payment_rounded, color: AppColors.primary, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Harga: Rp 9.000 per slot tambahan. Anda dapat membeli beberapa slot sekaligus.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final bought = await BuySlotBottomSheet.show(context, initialSlots: _currentSlotInfo);
+              if (bought == true) {
+                await _fetchSlotInfo();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Beli Slot Tambahan'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _submitItem() async {
@@ -34,6 +145,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
+      );
+      return;
+    }
+
+    final used = _currentSlotInfo?['used_slots'] ?? 0;
+    final maxSlots = _currentSlotInfo?['max_slots'] ?? 5;
+    if (_currentSlotInfo != null && used >= maxSlots) {
+      _showSlotLimitReachedDialog(
+        'Batas slot barang Anda telah penuh ($used/$maxSlots slot). Silakan beli slot tambahan seharga Rp 9.000/slot untuk mendaftarkan barang lagi.',
       );
       return;
     }
@@ -62,6 +182,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
           ),
         );
         Navigator.pop(context);
+      } else if (response.statusCode == 403 || data['code'] == 'SLOT_LIMIT_REACHED') {
+        if (!mounted) return;
+        _showSlotLimitReachedDialog(
+          data['message'] ?? 'Batas slot barang telah tercapai. Beli slot tambahan untuk mendaftar barang baru.',
+        );
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,6 +215,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final used = _currentSlotInfo?['used_slots'] ?? 0;
+    final maxSlots = _currentSlotInfo?['max_slots'] ?? 5;
+    final isFull = used >= maxSlots;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -117,6 +246,62 @@ class _AddItemScreenState extends State<AddItemScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Slot status strip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isFull ? AppColors.error.withOpacity(0.08) : AppColors.primary.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isFull ? AppColors.error.withOpacity(0.25) : AppColors.primary.withOpacity(0.15),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 18,
+                    color: isFull ? AppColors.error : AppColors.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Slot: $used / $maxSlots ${isFull ? '(PENUH)' : 'Digunakan (0/5 gratis)'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isFull ? AppColors.error : AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final bought = await BuySlotBottomSheet.show(context, initialSlots: _currentSlotInfo);
+                      if (bought == true) {
+                        _fetchSlotInfo();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Beli Slot (+)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -144,7 +329,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             const Text(
               'Nama Barang',
               style: TextStyle(
@@ -174,7 +359,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
               hintText: 'Ciri khas barang untuk identifikasi',
               prefixIcon: Icons.description_outlined,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 36),
             CustomButton(
               text: 'SIMPAN BARANG',
               icon: Icons.save_rounded,

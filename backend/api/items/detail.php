@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['id'])) {
         $item_id = htmlspecialchars(strip_tags($_GET['id']));
         
-        $query = "SELECT i.*, u.name as owner_name,
+        $query = "SELECT i.*, u.name as owner_name, u.phone as owner_phone,
                   (SELECT u2.phone FROM users u2 JOIN reports r ON r.reporter_id = u2.id WHERE r.item_id = i.id AND r.type = 'found' ORDER BY r.created_at DESC LIMIT 1) as finder_phone,
                   (SELECT u2.name FROM users u2 JOIN reports r ON r.reporter_id = u2.id WHERE r.item_id = i.id AND r.type = 'found' ORDER BY r.created_at DESC LIMIT 1) as finder_name,
                   (SELECT r.latitude FROM reports r WHERE r.item_id = i.id AND r.type = 'found' ORDER BY r.created_at DESC LIMIT 1) as latitude,

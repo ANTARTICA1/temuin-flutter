@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20),
     photo_url VARCHAR(255),
     role ENUM('admin', 'user') DEFAULT 'user',
+    extra_slots INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,6 +21,10 @@ CREATE TABLE IF NOT EXISTS items (
     image_url VARCHAR(255),
     status ENUM('safe', 'lost', 'found', 'claimed') DEFAULT 'safe',
     is_premium BOOLEAN DEFAULT FALSE,
+    reward_amount INT DEFAULT 0,
+    reward_description VARCHAR(255) NULL,
+    last_seen_location VARCHAR(255) NULL,
+    contact_phone VARCHAR(50) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -50,6 +55,18 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+    order_id VARCHAR(100) PRIMARY KEY,
+    user_id INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    amount INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    metadata TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 INSERT IGNORE INTO users (id, name, email, password, role) VALUES 

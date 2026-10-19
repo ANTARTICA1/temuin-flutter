@@ -28,6 +28,7 @@ Dengan menempelkan stiker **QR Code** yang digenerate khusus untuk setiap barang
 * **Laporan Temuan dengan GPS Real-time**: Penemu dapat mengirimkan laporan penemuan yang otomatis mencatat koordinat lintang & bujur (Latitude/Longitude) serta foto bukti.
 * **Buka Lokasi di Peta**: Terintegrasi langsung dengan aplikasi navigasi (Google Maps) untuk mempermudah pemilik mendatangi lokasi penemuan barang.
 * **Boost Postingan Hilang (Monetisasi & Prioritas)**: Fitur pembayaran menggunakan **Midtrans Snap** (Rp 15.000) untuk menaikkan postingan kehilangan ke bagian teratas (*Featured/Premium*).
+* **Sistem Kuota Slot Barang (0/5 Gratis & Slot Tambahan Rp 9.000)**: Setiap pengguna mendapatkan kuota dasar 5 barang gratis (0/5). Untuk menambah barang ke-6 dan seterusnya, pengguna dapat membeli slot tambahan seharga **Rp 9.000 per slot** secara borongan/sekaligus melalui pembayaran **Midtrans Snap**.
 * **Notifikasi Instan**: Pemilik barang langsung mendapatkan notifikasi dalam aplikasi saat barangnya dilaporkan ditemukan.
 * **Manajemen Profil & Avatar**: Pengaturan identitas pengguna dan unggah foto profil.
 

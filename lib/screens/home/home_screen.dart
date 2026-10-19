@@ -9,6 +9,7 @@ import '../my_items/item_list_screen.dart';
 
 import '../scanner/scanner_screen.dart';
 import '../profile/tutorial_screen.dart';
+import 'priority_lost_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(int)? onTabChange;
@@ -92,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen>
               _buildQuickActions(),
               const SizedBox(height: 28),
               _buildSloganCard(),
+              const SizedBox(height: 32),
+              _buildPriorityShowcase(),
               const SizedBox(height: 32),
               _buildFeedSection(),
               const SizedBox(height: 24),
@@ -475,7 +478,363 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildPriorityShowcase() {
+    final priorityItems = _feedItems.where((i) {
+      return i['is_premium'] == 1 || i['is_premium'] == true || i['is_premium'] == '1';
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.radar_rounded, color: Colors.white, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Radar Prioritas',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PriorityLostScreen()),
+                  ).then((_) => _fetchFeedItems());
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Lihat Semua (${priorityItems.length})',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.primary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        if (priorityItems.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PriorityLostScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E1357), Color(0xFF3B208C)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2E1A7D).withValues(alpha: 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.stars_rounded, color: Color(0xFF00C6FF), size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Buka Radar Barang Prioritas',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Lihat barang hilang berstatus prioritas atau bersayembara.',
+                            style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (priorityItems.length == 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: _buildPriorityCarouselCard(priorityItems[0], isFullWidth: true),
+          )
+        else
+          SizedBox(
+            height: 125,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              physics: const BouncingScrollPhysics(),
+              itemCount: priorityItems.length,
+              itemBuilder: (context, index) {
+                return _buildPriorityCarouselCard(priorityItems[index]);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPriorityCarouselCard(dynamic item, {bool isFullWidth = false}) {
+    final rewardAmount = (item['reward_amount'] ?? 0) as int;
+    final rewardDesc = item['reward_description']?.toString() ?? '';
+    final lastSeen = item['last_seen_location']?.toString() ?? '';
+
+    String getImageUrl(String? url) {
+      if (url == null || url.isEmpty) return '';
+      if (url.startsWith('http')) return url;
+      return '${ApiConstants.baseUrl}/$url';
+    }
+
+    final itemImage = getImageUrl(item['image_url']);
+
+    return Container(
+      width: isFullWidth ? double.infinity : 270,
+      margin: isFullWidth
+          ? const EdgeInsets.only(top: 2, bottom: 6)
+          : const EdgeInsets.only(right: 14, top: 2, bottom: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF00C6FF), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0072FF).withValues(alpha: 0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PriorityLostScreen()),
+            ).then((_) => _fetchFeedItems());
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top strip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified_rounded, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'PRIORITAS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            image: itemImage.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(itemImage),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: itemImage.isEmpty
+                              ? Icon(Icons.inventory_2_rounded,
+                                  color: AppColors.primary.withValues(alpha: 0.5), size: 20)
+                              : null,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['name'] ?? 'Tanpa Nama',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Oleh: ${item['owner_name'] ?? 'Pengguna'}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if ((rewardAmount > 0 || rewardDesc.isNotEmpty) || lastSeen.isNotEmpty)
+                      const SizedBox(height: 8),
+
+                    // Bounty tag if any
+                    if (rewardAmount > 0 || rewardDesc.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3CD),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFFD700)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.payments_rounded, size: 12, color: Color(0xFF856404)),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                rewardAmount > 0
+                                    ? 'Imbalan: Rp ${_formatRupiah(rewardAmount)}'
+                                    : 'Imbalan: $rewardDesc',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF856404),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Location tag if any
+                    if (lastSeen.isNotEmpty)
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, size: 12, color: AppColors.error),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              lastSeen,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatRupiah(int amount) {
+    return amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
   Widget _buildFeedSection() {
+    final regularFeedItems = _feedItems.where((i) {
+      return !(i['is_premium'] == 1 || i['is_premium'] == '1' || i['is_premium'] == true);
+    }).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -503,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen>
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
-          else if (_feedItems.isEmpty)
+          else if (regularFeedItems.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -528,9 +887,9 @@ class _HomeScreenState extends State<HomeScreen>
               padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: _feedItems.length > 3 ? 3 : _feedItems.length,
+              itemCount: regularFeedItems.length > 3 ? 3 : regularFeedItems.length,
               itemBuilder: (context, index) {
-                return _buildFeedCard(_feedItems[index]);
+                return _buildFeedCard(regularFeedItems[index]);
               },
             ),
         ],
@@ -618,7 +977,59 @@ class _HomeScreenState extends State<HomeScreen>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 12),
+                          if ((item['reward_amount'] ?? 0) > 0 || (item['reward_description'] != null && item['reward_description'].toString().isNotEmpty)) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3CD),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFFFD700)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.payments_rounded, size: 12, color: Color(0xFF856404)),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      (item['reward_amount'] ?? 0) > 0
+                                          ? 'Imbalan: Rp ${_formatRupiah(item['reward_amount'])}'
+                                          : 'Imbalan: ${item['reward_description']}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF856404),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          if (item['last_seen_location'] != null && item['last_seen_location'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on_rounded, size: 12, color: AppColors.error),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item['last_seen_location'].toString(),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               CircleAvatar(

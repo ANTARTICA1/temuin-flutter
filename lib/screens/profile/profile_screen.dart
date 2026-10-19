@@ -9,6 +9,7 @@ import '../notifications/notification_screen.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../utils/token_manager.dart';
+import '../../widgets/buy_slot_bottom_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userEmail = "Memuat...";
   String _userPhone = "-";
   String _userPhoto = "";
+  Map<String, dynamic>? _slots;
 
   @override
   void initState() {
@@ -41,6 +43,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _userEmail = user['email'] ?? 'user@temuin.com';
             _userPhone = user['phone'] ?? 'Belum diatur';
             _userPhoto = user['photo_url'] ?? '';
+            if (user['slots'] != null) {
+              _slots = Map<String, dynamic>.from(user['slots']);
+            }
           });
         }
         final prefs = await SharedPreferences.getInstance();
@@ -304,6 +309,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Status',
                           'Terverifikasi',
                         ),
+                        _buildDivider(),
+                        _buildSlotProfileItem(),
                       ],
                     ),
                   ),
@@ -503,6 +510,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSlotProfileItem() {
+    final used = _slots?['used_slots'] ?? 0;
+    final maxSlots = _slots?['max_slots'] ?? 5;
+    final extraSlots = _slots?['extra_slots'] ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.inventory_2_outlined, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Kapasitas Slot Barang',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$used / $maxSlots Terpakai (+$extraSlots tambahan)',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () async {
+              final bought = await BuySlotBottomSheet.show(context, initialSlots: _slots);
+              if (bought == true) {
+                _loadUserData();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text(
+                'Beli Slot (+)',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

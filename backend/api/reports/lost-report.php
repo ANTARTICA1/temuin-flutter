@@ -28,8 +28,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $db->beginTransaction();
 
-            $update_query = "UPDATE items SET status = 'lost' WHERE id = :item_id";
+            $reward_amount = isset($data->reward_amount) ? (int)$data->reward_amount : 0;
+            $reward_description = isset($data->reward_description) ? htmlspecialchars(strip_tags($data->reward_description)) : null;
+            $last_seen_location = isset($data->last_seen_location) ? htmlspecialchars(strip_tags($data->last_seen_location)) : null;
+            $contact_phone = isset($data->contact_phone) ? htmlspecialchars(strip_tags($data->contact_phone)) : null;
+
+            $update_query = "UPDATE items SET 
+                                status = 'lost',
+                                reward_amount = :reward_amount,
+                                reward_description = :reward_description,
+                                last_seen_location = :last_seen_location,
+                                contact_phone = :contact_phone
+                             WHERE id = :item_id";
             $update_stmt = $db->prepare($update_query);
+            $update_stmt->bindParam(':reward_amount', $reward_amount, PDO::PARAM_INT);
+            $update_stmt->bindParam(':reward_description', $reward_description);
+            $update_stmt->bindParam(':last_seen_location', $last_seen_location);
+            $update_stmt->bindParam(':contact_phone', $contact_phone);
             $update_stmt->bindParam(':item_id', $data->item_id);
             $update_stmt->execute();
 
