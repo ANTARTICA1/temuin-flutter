@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/TEMUIN.png" alt="Temuin Logo" width="120" />
   <h1>Temuin</h1>
-  <p><strong>Aplikasi Pelacak & Penemu Barang Hilang Berbasis QR Code & GPS Tracking</strong></p>
+  <p><strong>Lost and Found Platform Powered by Dynamic QR Code Identification & GPS Tracking</strong></p>
 
   [![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)](https://flutter.dev)
   [![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
@@ -12,141 +12,152 @@
 
 ---
 
-## Tentang Project
+## About the Project
 
-**Temuin** adalah solusi komprehensif untuk membantu masyarakat mengamankan, melacak, dan menemukan barang-barang berharga yang hilang (seperti dompet, tas, kunci, gadget, atau dokumen). 
+**Temuin** is a full-stack digital tracking and lost-and-found solution designed to help individuals secure, identify, and recover misplaced personal items (wallets, bags, keys, electronic devices, and academic credentials).
 
-Dengan menempelkan stiker **QR Code** yang digenerate khusus untuk setiap barang, siapa saja yang menemukan barang tersebut dapat langsung memindai (*scan*) QR code, mengetahui informasi pemilik yang aman, dan mengirimkan laporan penemuan lengkap dengan **koordinat GPS lokasi terkini** dan foto bukti.
-
----
-
-## Fitur Utama
-
-### Aplikasi Mobile (Flutter)
-* **Registrasi Barang & Generator QR Code**: Daftarkan barang pribadi dan cetak/simpan QR code unik secara langsung dari aplikasi.
-* **Scanner QR Code Terintegrasi**: Pemindaian cepat dan responsif menggunakan kamera bawaan ponsel via `mobile_scanner`.
-* **Laporan Temuan dengan GPS Real-time**: Penemu dapat mengirimkan laporan penemuan yang otomatis mencatat koordinat lintang & bujur (Latitude/Longitude) serta foto bukti.
-* **Buka Lokasi di Peta**: Terintegrasi langsung dengan aplikasi navigasi (Google Maps) untuk mempermudah pemilik mendatangi lokasi penemuan barang.
-* **Boost Postingan Hilang (Monetisasi & Prioritas)**: Fitur pembayaran menggunakan **Midtrans Snap** (Rp 15.000) untuk menaikkan postingan kehilangan ke bagian teratas (*Featured/Premium*).
-* **Sistem Kuota Slot Barang (0/5 Gratis & Slot Tambahan Rp 9.000)**: Setiap pengguna mendapatkan kuota dasar 5 barang gratis (0/5). Untuk menambah barang ke-6 dan seterusnya, pengguna dapat membeli slot tambahan seharga **Rp 9.000 per slot** secara borongan/sekaligus melalui pembayaran **Midtrans Snap**.
-* **Notifikasi Instan**: Pemilik barang langsung mendapatkan notifikasi dalam aplikasi saat barangnya dilaporkan ditemukan.
-* **Manajemen Profil & Avatar**: Pengaturan identitas pengguna dan unggah foto profil.
-
-### Backend & Admin Dashboard (PHP & MySQL)
-* **RESTful JSON API**: Arsitektur endpoint bersih untuk autentikasi, manajemen barang, laporan, dan notifikasi.
-* **Keamanan Autentikasi**: Autentikasi berbasis token Bearer dengan enkripsi password `BCRYPT`.
-* **Midtrans Webhook Integration**: Penanganan callback otomatis dari gateway pembayaran Midtrans untuk update status transaksi (`settlement`, `pending`, `cancel`).
-* **Web Admin Panel**: Dashboard berbasis web untuk memantau data pengguna, daftar barang beredar, dan riwayat laporan penemuan/kehilangan.
+By attaching a unique physical **QR Code sticker** generated per registered item, any finder can instantly scan the tag with a smartphone camera, view privacy-sanitized contact information, and submit a discovery report complete with **real-time GPS coordinates** and photographic verification.
 
 ---
 
-## Tech Stack
+## Application Interface Previews
 
-| Komponen | Teknologi | Deskripsi |
-| :--- | :--- | :--- |
-| **Mobile Client** | Flutter 3.x / Dart | Framework UI modern Material 3, cross-platform Android & iOS |
-| **State & Storage**| `shared_preferences` | Penyimpanan sesi login dan token lokal |
-| **Kamera & QR** | `mobile_scanner`, `qr_flutter` | Engine scan kamera & pembuatan QR code dinamis |
-| **Lokasi & Media** | `geolocator`, `image_picker` | GPS tracking akurat & pengambilan foto kamera/galeri |
-| **Backend API** | PHP Native (PDO) | REST API ringan dengan koneksi database aman |
+| Item Inventory & Anti-Lost QR Code Generator | Real-Time Recovery Notification & GPS Coordinates |
+|:---:|:---:|
+| ![Item Inventory & QR Code](docs/screenshots/temuin_qrcode.png) | ![Recovery Notification & GPS](docs/screenshots/temuin_notification.png) |
+
+---
+
+## Core Capabilities
+
+### Mobile Client (Flutter)
+- Item Registration & QR Generator: Register personal valuables and render high-resolution printable QR codes directly from the client.
+- Integrated Camera Scanner: Fast and responsive QR code decoding via `mobile_scanner`.
+- Real-Time GPS Incident Reporting: Finders submit recovery reports that automatically capture exact latitude and longitude coordinates alongside photographic evidence.
+- Native Navigation Mapping: Integrated with external mapping providers (Google Maps) to direct the verified owner directly to the recovery location.
+- Monetized Post Boosting (Midtrans Snap): Integrated micro-payments to elevate urgent lost item notices into featured priority listings.
+- Item Slot Quota System: Every account receives an initial quota of 5 free slots, with optional bulk slot purchases processed via Midtrans Snap.
+- Instant In-App Notifications: Item owners receive automated alert notifications the instant a discovery report is submitted.
+- User Profile & Avatar Customization: Secure profile management and user identity management.
+
+### Backend & Administration (PHP & MySQL)
+- RESTful JSON API: Clean endpoint architecture handling authentication, item lifecycles, recovery claims, and alerts.
+- Robust Token Security: Stateless Bearer token authorization backed by salted `BCRYPT` password hashing.
+- Automated Payment Webhook: Secure callback listener verifying SHA-512 signatures from Midtrans to transition payment states (`settlement`, `pending`, `cancel`).
+- Web Administrative Dashboard: Web-based control center for inspecting registered users, circulating inventory, and audit trails.
+
+---
+
+## Technology Stack
+
+| Component | Technology | Description |
+|:---|:---|:---|
+| **Mobile Client** | Flutter 3.x / Dart | Modern Material 3 UI framework, targeting Android and iOS |
+| **State & Local Storage** | `shared_preferences` | Local persistence of auth tokens and session data |
+| **Camera & QR Engine** | `mobile_scanner`, `qr_flutter` | Camera decoding engine and vector QR generation |
+| **Location & Media** | `geolocator`, `image_picker` | Fine GPS coordinate tracking and media uploads |
+| **Backend REST API** | PHP Native (PDO) | Lightweight API with prepared SQL statements |
 | **Database** | MySQL / MariaDB | Relational database (`temuin_db`) |
-| **Payment Gateway**| Midtrans Snap API | Pembayaran digital (GoPay, QRIS, Virtual Account, dll.) |
-| **Local Tunnel** | Ngrok / Laragon | Tunneling koneksi lokal untuk pengujian di perangkat fisik |
+| **Payment Gateway** | Midtrans Snap API | Integrated digital transactions (Virtual Accounts, QRIS, e-Wallets) |
 
 ---
 
-## Struktur Direktori
+## Project Structure
 
-```text
+```
 temuin/
-├── android/                    # Konfigurasi native Android
-├── assets/                     # Logo dan aset grafis aplikasi
-├── backend/                    # Backend server (PHP)
-│   ├── admin/                  # Web admin dashboard (login, items, reports, users)
-│   ├── api/                    # REST API endpoints
-│   │   ├── auth/               # Endpoint login, register, profile
-│   │   ├── config/             # Konfigurasi database & payment gateway
-│   │   ├── items/              # Endpoint CRUD barang & boost
-│   │   ├── notifications/      # Endpoint notifikasi pengguna
-│   │   ├── payment/            # Endpoint Midtrans charge & webhook
-│   │   ├── reports/            # Endpoint laporan kehilangan & penemuan
-│   │   ├── uploads/            # Direktori file media yang diupload
-│   │   └── utils/              # Helper autentikasi & token parser
+├── android/                    # Android platform configuration
+├── assets/                     # Application logos and visual branding
+├── backend/                    # PHP backend services
+│   ├── admin/                  # Administrative web panel (auth, inventory, reports)
+│   ├── api/                    # RESTful endpoints
+│   │   ├── auth/               # Login, registration, and profile endpoints
+│   │   ├── config/             # Database and payment credentials
+│   │   ├── items/              # Item CRUD and boost operations
+│   │   ├── notifications/      # User notification dispatchers
+│   │   ├── payment/            # Midtrans charge requests and webhook listeners
+│   │   ├── reports/            # Discovery and lost item reports
+│   │   ├── uploads/            # Uploaded media storage
+│   │   └── utils/              # Token verification and helper routines
 │   └── database/
-│       └── schema.sql          # Skema database MySQL & seed data awal
-├── ios/                        # Konfigurasi native iOS
-├── lib/                        # Source code Flutter
-│   ├── core/                   # Konstanta (warna, URL API) & client HTTP
-│   ├── screens/                # UI Screens (auth, home, items, reports, scanner)
-│   ├── utils/                  # Map launcher, token manager
-│   ├── widgets/                # Reusable UI widgets
-│   └── main.dart               # Entry point aplikasi Flutter
-├── pubspec.yaml                # Manajemen dependensi Flutter
-└── README.md                   # Dokumentasi project
+│       └── schema.sql          # SQL relational schema and initial seeds
+├── docs/
+│   └── screenshots/            # Interface preview assets
+├── ios/                        # iOS platform configuration
+├── lib/                        # Flutter application codebase
+│   ├── core/                   # API constants, themes, and HTTP client
+│   ├── screens/                # UI screens (auth, home, items, reports, scanner)
+│   ├── utils/                  # Map launcher and session utilities
+│   ├── widgets/                # Reusable UI component library
+│   └── main.dart               # Main client application entry point
+├── pubspec.yaml                # Flutter package dependencies
+└── README.md                   # Technical documentation
 ```
 
 ---
 
-## Panduan Instalasi & Menjalankan
+## Setup and Installation
 
-### 1. Prasyarat Sistem
-* [Flutter SDK](https://docs.flutter.dev/get-started/install) (versi 3.x atau terbaru)
-* [PHP](https://www.php.net/) (>= 8.0) dengan ekstensi `pdo_mysql`, `curl`, `json` aktif
-* [MySQL / MariaDB](https://www.mysql.com/) (tersedia di Laragon atau XAMPP)
-* Android Studio / VS Code dengan Flutter Extension
-* (Opsional) Akun Sandbox [Midtrans](https://dashboard.sandbox.midtrans.com/)
+### 1. Prerequisites
+- Flutter SDK (3.x or higher)
+- PHP (>= 8.0) with extensions: `pdo_mysql`, `curl`, `json`
+- MySQL / MariaDB Server
+- Android Studio or Visual Studio Code with Flutter extensions
 
 ---
 
-### 2. Setup Database & Backend (PHP)
+### 2. Database and Backend Configuration
 
-1. **Jalankan Apache & MySQL** di Laragon / XAMPP.
-2. Buka **phpMyAdmin** atau GUI MySQL favorit Anda, lalu import file skema database:
+1. Launch your MySQL server instance.
+2. Import the schema file to construct the database and seed tables:
    ```bash
-   backend/database/schema.sql
+   mysql -u root -p < backend/database/schema.sql
    ```
-   *(Skema ini otomatis membuat database `temuin_db`, seluruh tabel relasional, dan 1 akun admin default).*
 
-3. **Konfigurasi Midtrans Server Key**:
-   Salin file template konfigurasi di `backend/api/config/`:
+3. Configure Payment Credentials:
+   Duplicate the template configuration inside `backend/api/config/`:
    ```bash
    cp backend/api/config/midtrans.php.example backend/api/config/midtrans.php
    ```
-   Buka `backend/api/config/midtrans.php` dan masukkan Server Key Midtrans Anda:
+   Add your Midtrans Sandbox Server Key:
    ```php
    $serverKey = 'Mid-server-YOUR_SERVER_KEY_HERE';
    $isProduction = false;
    ```
 
-4. **Konfigurasi Database** (Jika username/password MySQL lokal Anda bukan `root` tanpa password):
-   Sesuaikan di [`backend/api/config/database.php`](backend/api/config/database.php).
+4. Verify Database Credentials:
+   Update database connection parameters inside `backend/api/config/database.php` as needed.
 
 ---
 
-### 3. Setup Aplikasi Mobile (Flutter)
+### 3. Mobile Client Configuration
 
-1. **Install Dependensi Flutter**:
-   Buka terminal di root project dan jalankan:
+1. Install Dependencies:
    ```bash
    flutter pub get
    ```
 
-2. **Atur URL API Backend**:
-   Buka file [`lib/core/constants/api_constants.dart`](lib/core/constants/api_constants.dart):
-   * **Jika menggunakan Android Emulator**:
-     ```dart
-     static const String baseUrl = 'http://10.0.2.2/temuin/backend/api';
-     ```
-   * **Jika menggunakan Perangkat HP Fisik (via Ngrok)**:
-     Jalankan tunnel Ngrok (port 80) dan pasang domain publik Anda:
-     ```dart
-     static const String baseUrl = 'https://your-ngrok-domain.ngrok-free.dev/temuin/backend/api';
-     ```
+2. Configure Endpoint Base URL:
+   Open `lib/core/constants/api_constants.dart` and specify your backend host:
+   ```dart
+   // For Android Emulator
+   static const String baseUrl = 'http://10.0.2.2/temuin/backend/api';
 
-3. **Jalankan Aplikasi**:
-   Pastikan emulator atau perangkat fisik Android/iOS sudah terhubung, lalu jalankan:
+   // For Physical Devices via LAN or Tunneling
+   static const String baseUrl = 'https://your-public-url.ngrok-free.dev/temuin/backend/api';
+   ```
+
+3. Run the Mobile Application:
    ```bash
    flutter run
    ```
 
 ---
+
+## Author
+
+Anak Agung Ngurah Krisna Artha Wibawa ([ANTARTICA1](https://github.com/ANTARTICA1))
+
+## License
+
+This project is open-source and licensed under the MIT License.
